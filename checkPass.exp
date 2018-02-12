@@ -1,0 +1,21 @@
+#!/usr/bin/expect
+#log_file test.log
+if {$argc < 2} {
+	send_user "Usage: checkPass.exp ip rootpass\n"
+	exit
+}
+set ip [lindex $argv 0]
+set rootPass [lindex $argv 1]
+set timeout 20
+
+spawn ssh  $ip
+expect -re "\$$" {send "su -\r" }
+expect "assword"   {send "$rootPass\r" }
+expect {
+  "root@"     {send_user "\n output: $ip rootPass loginSucceed\n"
+              send "exit\r"}
+  "Authentication failure"  {send_user "\n output: $ip rootPass loginFailed\n"}
+}
+expect -re "\$$"   {send "exit\r"}
+expect eof
+exit

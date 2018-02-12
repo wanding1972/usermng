@@ -1,0 +1,28 @@
+#!/usr/bin/expect
+#log_file test.log
+if {$argc < 2} {
+	send_user "Usage: userMgr.exp ip rootpass user method\n"
+	exit
+}
+
+set ip [lindex $argv 0]
+set rootPass [lindex $argv 1]
+set user [lindex $argv 2]
+set method [lindex $argv 3]
+set timeout 20
+spawn ssh  $ip
+expect -re "\$$" {send "su -\r" }
+expect "assword"   {send "$rootPass\r" }
+expect {
+  "root@"    {send "/tmp/userMgr.sh $method $user \r"
+		expect {
+			"succeed"  {send_user "\n output: $method user $user succeed\n"}
+			"failed"   {send_user "\n output: $method user $user failed\n"}
+		}
+		expect "root@"    {send "exit\r"}
+		}
+  "failure"  {send_user "$ip rootPass failed\n"}
+}
+expect -re "\$$"   {send "exit\r"}
+expect eof
+exit

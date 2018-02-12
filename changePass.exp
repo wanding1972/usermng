@@ -1,0 +1,32 @@
+#!/usr/bin/expect
+#log_file test.log
+if {$argc < 2} {
+	send_user "Usage: changePass.exp ip oldRootpass newRootPass\n"
+	exit
+}
+
+set ip [lindex $argv 0]
+set oldPass [lindex $argv 1]
+set newPass [lindex $argv 2]
+set timeout 20
+spawn ssh  $ip
+expect -re "\$$" {send "su -\r" }
+expect "assword"   {send "$oldPass\r" }
+expect {
+  "root@"    {  
+		send "chattr -i /etc/passwd /etc/shadow /etc/group /etc/gshadow\r"
+		expect "root@"      {send "passwd \r"  }
+		expect "assword"    {send "$newPass\r"}
+		expect "assword"    {send "$newPass\r"}
+		expect {
+			"password updated successfully"  {send_user "\noutput:$ip:$newPass: changePass succeed\n"}
+			"password unchanged" {send_user "\n output: changePass failed\n"}
+			}
+		expect "root@"      {send "chattr +i /etc/passwd /etc/shadow /etc/group /etc/gshadow\r"  }
+		expect "root@"    {send "exit\r"}
+		}
+  "Authentication failure"  {send_user "\n output: $ip rootPass failed\n"}
+}
+expect -re "\$$"   {send "exit\r"}
+expect eof
+exit
